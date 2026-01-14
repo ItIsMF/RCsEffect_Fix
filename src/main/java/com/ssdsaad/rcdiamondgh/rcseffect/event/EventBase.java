@@ -20,79 +20,91 @@ public class EventBase {
 
     @SubscribeEvent
     public void onLivingHurt(final LivingHurtEvent event) {
-        if (!(event.source.getEntity() instanceof EntityLivingBase)) {
+        // 防止在药水伤害(Magic/Wither)的处理逻辑中再次修改药水列表
+        if (event.source.isMagicDamage() || "wither".equals(event.source.getDamageType())) {
             return;
         }
+
         final EntityLivingBase wounded = event.entityLiving;
-        final EntityLivingBase attacker = (EntityLivingBase) event.source.getEntity();
+        // 获取伤害来源实体，增加 instanceof 检查安全性
+        final EntityLivingBase attacker = (event.source.getEntity() instanceof EntityLivingBase)
+            ? (EntityLivingBase) event.source.getEntity()
+            : null;
+
+        // --- 处理受伤者 (Wounded) 的防御/反击效果 ---
         if (wounded != null) {
-            final ItemStack[] array;
-            final ItemStack[] woundedItem = array = new ItemStack[] { wounded.getEquipmentInSlot(0),
-                wounded.getEquipmentInSlot(1), wounded.getEquipmentInSlot(2), wounded.getEquipmentInSlot(3),
-                wounded.getEquipmentInSlot(4) };
-            for (final ItemStack i : array) {
-                if (i != null && i.hasTagCompound()) {
-                    final NBTTagCompound nbt = i.getTagCompound();
-                    if (nbt.hasKey("HurtEffect")) {
-                        if (nbt.hasKey("HurtEffect_random")) {
-                            Tools.bufferGiverController(
-                                nbt.getString("HurtEffect_random"),
-                                wounded,
-                                nbt.getIntArray("HurtEffect"));
-                        } else {
-                            Tools.bufferGiverController(wounded, nbt.getIntArray("HurtEffect"));
-                        }
+            for (int i = 0; i < 5; i++) {
+                ItemStack stack = wounded.getEquipmentInSlot(i);
+                if (stack == null || !stack.hasTagCompound()) continue;
+
+                NBTTagCompound nbt = stack.getTagCompound();
+
+                // 触发受伤药水效果
+                if (nbt.hasKey("HurtEffect")) {
+                    int[] effects = nbt.getIntArray("HurtEffect");
+                    if (nbt.hasKey("HurtEffect_random")) {
+                        String randomStr = nbt.getString("HurtEffect_random");
+                        Tools.bufferGiverController(randomStr, wounded, effects);
+                    } else {
+                        Tools.bufferGiverController(wounded, effects);
                     }
-                    if (nbt.hasKey("HurtEffect_sound")) {
-                        Tools.soundPlayer(wounded, nbt.getString("HurtEffect_sound"));
-                    }
-                    if (nbt.hasKey("HurtTips") && wounded instanceof EntityPlayer) {
-                        Tools.playerTalker((EntityPlayer) wounded, nbt.getTagList("HurtTips", 8));
-                    }
+                }
+
+                // 受伤音效
+                if (nbt.hasKey("HurtEffect_sound")) {
+                    Tools.soundPlayer(wounded, nbt.getString("HurtEffect_sound"));
+                }
+
+                // 受伤提示 (仅玩家)
+                if (wounded instanceof EntityPlayer && nbt.hasKey("HurtTips")) {
+                    Tools.playerTalker((EntityPlayer) wounded, nbt.getTagList("HurtTips", 8));
                 }
             }
         }
+
+        // --- 处理攻击者 (Attacker) 的攻击/吸血效果 ---
         if (attacker != null && wounded != null) {
-            final ItemStack[] array2;
-            final ItemStack[] attackerItem = array2 = new ItemStack[] { attacker.getEquipmentInSlot(0),
-                attacker.getEquipmentInSlot(1), attacker.getEquipmentInSlot(2), attacker.getEquipmentInSlot(3),
-                attacker.getEquipmentInSlot(4) };
-            for (final ItemStack i : array2) {
-                if (i != null && i.hasTagCompound()) {
-                    final NBTTagCompound nbt = i.getTagCompound();
-                    if (nbt.hasKey("attackSpeed")) {
-                        final int time = nbt.getInteger("attackSpeed");
-                        Tools.immuneChanger(wounded, time);
+            for (int i = 0; i < 5; i++) {
+                ItemStack stack = attacker.getEquipmentInSlot(i);
+                if (stack == null || !stack.hasTagCompound()) continue;
+
+                NBTTagCompound nbt = stack.getTagCompound();
+
+                // 攻击无敌时间修改
+                if (nbt.hasKey("attackSpeed")) {
+                    Tools.immuneChanger(wounded, nbt.getInteger("attackSpeed"));
+                }
+
+                // 攻击给予敌人效果 (AttackEnemy)
+                if (nbt.hasKey("AttackEnemy")) {
+                    int[] effects = nbt.getIntArray("AttackEnemy");
+                    if (nbt.hasKey("AttackEnemy_random")) {
+                        Tools.bufferGiverController(nbt.getString("AttackEnemy_random"), wounded, effects);
+                    } else {
+                        Tools.bufferGiverController(wounded, effects);
                     }
-                    if (nbt.hasKey("AttackEnemy")) {
-                        if (nbt.hasKey("AttackEnemy_random")) {
-                            Tools.bufferGiverController(
-                                nbt.getString("AttackEnemy_random"),
-                                wounded,
-                                nbt.getIntArray("AttackEnemy"));
-                        } else {
-                            Tools.bufferGiverController(wounded, nbt.getIntArray("AttackEnemy"));
-                        }
+                }
+                // 音效
+                if (nbt.hasKey("AttackEnemy_sound")) {
+                    Tools.soundPlayer(wounded, nbt.getString("AttackEnemy_sound"));
+                }
+
+                // 攻击给予自身效果 (PlayerAttack / SelfBuff)
+                if (nbt.hasKey("PlayerAttack")) {
+                    int[] effects = nbt.getIntArray("PlayerAttack");
+                    if (nbt.hasKey("PlayerAttack_random")) {
+                        Tools.bufferGiverController(nbt.getString("PlayerAttack_random"), attacker, effects);
+                    } else {
+                        Tools.bufferGiverController(attacker, effects);
                     }
-                    if (nbt.hasKey("AttackEnemy_sound")) {
-                        Tools.soundPlayer(wounded, nbt.getString("AttackEnemy_sound"));
-                    }
-                    if (nbt.hasKey("PlayerAttack")) {
-                        if (nbt.hasKey("PlayerAttack_random")) {
-                            Tools.bufferGiverController(
-                                nbt.getString("PlayerAttack_random"),
-                                attacker,
-                                nbt.getIntArray("PlayerAttack"));
-                        } else {
-                            Tools.bufferGiverController(attacker, nbt.getIntArray("PlayerAttack"));
-                        }
-                    }
-                    if (nbt.hasKey("PlayerAttack_sound")) {
-                        Tools.soundPlayer(attacker, nbt.getString("PlayerAttack_sound"));
-                    }
-                    if (nbt.hasKey("knockBack")) {
-                        Tools.knockBacker(wounded, attacker, nbt.getFloat("knockBack"));
-                    }
+                }
+                if (nbt.hasKey("PlayerAttack_sound")) {
+                    Tools.soundPlayer(attacker, nbt.getString("PlayerAttack_sound"));
+                }
+
+                // 击退逻辑
+                if (nbt.hasKey("knockBack")) {
+                    Tools.knockBacker(wounded, attacker, nbt.getFloat("knockBack"));
                 }
             }
         }
@@ -228,26 +240,30 @@ public class EventBase {
     @SubscribeEvent
     public void onUpDate(final LivingEvent.LivingUpdateEvent event) {
         final EntityLivingBase entity = event.entityLiving;
-        final ItemStack[] array;
-        final ItemStack[] items = array = new ItemStack[] { entity.getEquipmentInSlot(0), entity.getEquipmentInSlot(1),
-            entity.getEquipmentInSlot(2), entity.getEquipmentInSlot(3), entity.getEquipmentInSlot(4) };
-        for (final ItemStack i : array) {
-            if (i != null && i.hasTagCompound()) {
-                final NBTTagCompound nbt = i.getTagCompound();
+
+        if (entity.ticksExisted % 20 != 0 || entity.worldObj.isRemote) {
+            return;
+        }
+
+        // 装备栏检测
+        for (int i = 0; i < 5; i++) {
+            ItemStack stack = entity.getEquipmentInSlot(i);
+            if (stack != null && stack.hasTagCompound()) {
+                NBTTagCompound nbt = stack.getTagCompound();
                 if (nbt.hasKey("WearEffect")) {
                     Tools.bufferGiverController(entity, nbt.getIntArray("WearEffect"));
                 }
             }
         }
+
+        // 玩家背包检测
         if (entity instanceof EntityPlayer) {
             final EntityPlayer player = (EntityPlayer) entity;
-            final ItemStack[] mainInventory;
-            final ItemStack[] allItem = mainInventory = player.inventory.mainInventory;
-            for (final ItemStack j : mainInventory) {
-                if (j != null && j.hasTagCompound()) {
-                    final NBTTagCompound nbt2 = j.getTagCompound();
-                    if (nbt2.hasKey("HasEffect")) {
-                        Tools.bufferGiverController(entity, nbt2.getIntArray("HasEffect"));
+            for (ItemStack stack : player.inventory.mainInventory) {
+                if (stack != null && stack.hasTagCompound()) {
+                    NBTTagCompound nbt = stack.getTagCompound();
+                    if (nbt.hasKey("HasEffect")) {
+                        Tools.bufferGiverController(entity, nbt.getIntArray("HasEffect"));
                     }
                 }
             }

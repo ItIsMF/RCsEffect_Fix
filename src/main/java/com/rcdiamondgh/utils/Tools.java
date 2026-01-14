@@ -64,17 +64,27 @@ public class Tools {
     }
 
     public static void buffGiver(final EntityLivingBase entity, final PotionEffect ea) {
-        if (entity.isPotionActive(ea.getPotionID()) && entity != null) {
-            final PotionEffect e = entity.getActivePotionEffect(Potion.potionTypes[ea.getPotionID()]);
-            if (e != null) {
-                if (e.getDuration() <= 4) {
-                    entity.addPotionEffect(ea);
-                } else if (e.getAmplifier() < ea.getAmplifier()) {
-                    entity.addPotionEffect(ea);
-                }
-            }
+        if (entity == null || ea == null || entity.isDead) {
+            return;
+        }
+
+        // 获取对应的药水对象进行安全检查
+        if (ea.getPotionID() < 0 || ea.getPotionID() >= Potion.potionTypes.length
+            || Potion.potionTypes[ea.getPotionID()] == null) {
+            return;
+        }
+
+        PotionEffect active = entity.getActivePotionEffect(Potion.potionTypes[ea.getPotionID()]);
+
+        if (active == null) {
+            entity.addPotionEffect(new PotionEffect(ea));
         } else {
-            entity.addPotionEffect(ea);
+            boolean isAmplifierStronger = ea.getAmplifier() > active.getAmplifier();
+            boolean isDurationRunningOut = (ea.getAmplifier() == active.getAmplifier()) && (active.getDuration() <= 10);
+
+            if (isAmplifierStronger || isDurationRunningOut) {
+                entity.addPotionEffect(new PotionEffect(ea));
+            }
         }
     }
 
@@ -283,12 +293,18 @@ public class Tools {
     }
 
     public static double[] stringToDoubleArray(final String str, final String pil) {
-        final String[] nums = str.split(pil);
-        final double[] t = new double[nums.length];
-        for (int x = 0; x < nums.length; ++x) {
-            t[x] = Double.parseDouble(nums[0]);
+        try {
+            if (str == null || str.isEmpty()) return new double[0];
+            final String[] nums = str.split(pil);
+            final double[] t = new double[nums.length];
+            for (int x = 0; x < nums.length; ++x) {
+                t[x] = Double.parseDouble(nums[x].trim());
+            }
+            return t;
+        } catch (NumberFormatException e) {
+            System.err.println("[RCE-Fix] Error parsing NBT double array: " + str);
+            return new double[0]; // 返回空数组而不是崩溃
         }
-        return t;
     }
 
     public static String[] stringPlit(final String str, final String pil) {
