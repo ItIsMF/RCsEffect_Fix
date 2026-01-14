@@ -1,0 +1,21 @@
+{
+  "modListVersion": 2,
+  "modList": [{
+    "modid": "${modId}",
+    "name": "${modName}",
+    "description": "A mod designed for making Minecraft RPG maps.",
+    "version": "1.7_fix",
+    "mcversion": "1.7.10",
+    "url": "https://github.com/ItIsMF/RCsEffect_Fix",
+    "updateUrl": "https://github.com/ItIsMF/RCsEffect_Fix",
+    "authorList": ["RC_diamond_GH","ssdsaad"],
+    "credits": "Original mod by RC_diamond_GH & ssdsaad; Modern fix by MF.",
+    "logoFile": "RCsEffect.png",
+    "screenshots": [],
+    "parent": "",
+    "requiredMods": [],
+    "dependencies": [],
+    "dependants": [],
+    "useDependencyInformation": false
+  }]
+}

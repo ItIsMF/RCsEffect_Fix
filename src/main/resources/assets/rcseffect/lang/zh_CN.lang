@@ -1,0 +1,2 @@
+﻿commands.contell.usage=/contell [玩家] [文本] [间隔时间（单位）：毫秒，1000ms=1s] [文本] [间隔时间] ...[文本]
+commands.soundplayer.usage=/playsound [玩家] [声音] [响度] [音调]

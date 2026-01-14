@@ -1,0 +1,2 @@
+commands.contell.usage=/contell [player] [text] [lasting time(Unit): ms. 1000ms=1s] [text] [lasting time] ...[Text]
+commands.soundplayer.usage=/playsound [Player] [Sound] [Intensity] [Pitch]
