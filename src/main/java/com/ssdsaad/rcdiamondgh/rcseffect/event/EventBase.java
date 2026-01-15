@@ -239,6 +239,9 @@ public class EventBase {
 
     @SubscribeEvent
     public void onUpDate(final LivingEvent.LivingUpdateEvent event) {
+        // LivingUpdateEvent 发生在 updatePotionEffects 之后，此时修改药水列表是安全的
+        Tools.applyPendingBuffs(event.entityLiving);
+
         final EntityLivingBase entity = event.entityLiving;
 
         if (entity.ticksExisted % 20 != 0 || entity.worldObj.isRemote) {
