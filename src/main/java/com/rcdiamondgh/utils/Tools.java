@@ -24,10 +24,6 @@ public class Tools {
     public static File debugFile;
     private static Minecraft mc;
 
-    // 使用 WeakHashMap 存储每个实体等待添加的药水列表
-    private static final Map<EntityLivingBase, List<PotionEffect>> pendingBuffs = Collections
-        .synchronizedMap(new WeakHashMap<EntityLivingBase, List<PotionEffect>>());
-
     public Tools(final FMLPreInitializationEvent event) {
         Tools.gameFile = event.getModConfigurationDirectory()
             .getParentFile()
@@ -67,18 +63,18 @@ public class Tools {
         }
     }
 
-    // 这个方法现在只负责将药水加入"候补名单"，不直接操作实体。
     public static void buffGiver(final EntityLivingBase entity, final PotionEffect ea) {
-        if (entity == null || ea == null || entity.isDead) return;
-
-        synchronized (pendingBuffs) {
-            List<PotionEffect> list = pendingBuffs.get(entity);
-            if (list == null) {
-                list = new ArrayList<PotionEffect>();
-                pendingBuffs.put(entity, list);
+        if (entity.isPotionActive(ea.getPotionID()) && entity != null) {
+            final PotionEffect e = entity.getActivePotionEffect(Potion.potionTypes[ea.getPotionID()]);
+            if (e != null) {
+                if (e.getDuration() <= 4) {
+                    entity.addPotionEffect(ea);
+                } else if (e.getAmplifier() < ea.getAmplifier()) {
+                    entity.addPotionEffect(ea);
+                }
             }
-            // 这里我们克隆一个新的 PotionEffect 对象存入，防止引用问题
-            list.add(new PotionEffect(ea));
+        } else {
+            entity.addPotionEffect(ea);
         }
     }
 
@@ -354,42 +350,5 @@ public class Tools {
         Tools.debugFile = new File("e:" + File.separator + "debugFile.txt");
         Tools.mc = FMLClientHandler.instance()
             .getClient();
-    }
-
-    // 负责将候补名单里的药水真正应用到实体上，必须在安全的时机（例如 onUpdate）调用。
-    public static void applyPendingBuffs(final EntityLivingBase entity) {
-        List<PotionEffect> list = null;
-
-        // 取出并移除该实体的待处理列表
-        synchronized (pendingBuffs) {
-            list = pendingBuffs.remove(entity);
-        }
-
-        if (list != null && !list.isEmpty()) {
-            for (PotionEffect ea : list) {
-                safeAddPotionToEntity(entity, ea);
-            }
-        }
-    }
-
-    // 真正的添加逻辑
-    private static void safeAddPotionToEntity(EntityLivingBase entity, PotionEffect ea) {
-        if (entity.isDead || entity.worldObj == null) return;
-        if (ea.getPotionID() < 0 || ea.getPotionID() >= Potion.potionTypes.length
-            || Potion.potionTypes[ea.getPotionID()] == null) return;
-
-        PotionEffect active = entity.getActivePotionEffect(Potion.potionTypes[ea.getPotionID()]);
-
-        if (active == null) {
-            entity.addPotionEffect(ea);
-        } else {
-            // 只有更强或快过期时才覆盖，减少网络包
-            boolean isAmplifierStronger = ea.getAmplifier() > active.getAmplifier();
-            boolean isDurationRunningOut = (ea.getAmplifier() == active.getAmplifier()) && (active.getDuration() <= 10);
-
-            if (isAmplifierStronger || isDurationRunningOut) {
-                entity.addPotionEffect(ea);
-            }
-        }
     }
 }

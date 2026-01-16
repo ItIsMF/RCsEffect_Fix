@@ -10,7 +10,11 @@ val archivesBaseName = "RCsEffect"
 tasks.jar {
     manifest {
         attributes(
-            "Manifest-Version" to "1.0"
+            "Manifest-Version" to "1.0",
+            "FMLCorePlugin" to "com.ssdsaad.rcdiamondgh.rcseffect.mixin.RCEMixinLoader",
+            "FMLCorePluginContainsFMLMod" to "true",
+            "ForceLoadAsMod" to "true",
+            "TweakClass" to "org.spongepowered.asm.launch.MixinTweaker"
         )
     }
 

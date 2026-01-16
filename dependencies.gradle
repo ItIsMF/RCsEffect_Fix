@@ -34,5 +34,7 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
-    //runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.69-GTNH:dev")
+    annotationProcessor "com.gtnewhorizon:gtnhmixins:2.0.0-beta"
+    compileOnly "com.gtnewhorizon:gtnhmixins:2.0.0-beta"
+    implementation "com.gtnewhorizon:gtnhmixins:2.0.0-beta"
 }

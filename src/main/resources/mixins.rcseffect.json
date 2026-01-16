@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "com.ssdsaad.rcdiamondgh.rcseffect.mixin",
+  "refmap": "mixins.rcseffect.refmap.json",
+  "target": "@env(DEFAULT)",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "MixinEntityLivingBase"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
