@@ -4,8 +4,8 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.potion.PotionEffect;
 
 /**
- * 一个安全的空对象。
- * 当药水在迭代过程中被移除时，使用此对象顶替，防止 NPE。
+ * 一个安全的空对象
+ * 当药水在迭代过程中被移除时，使用此对象顶替，防止 NPE
  */
 public class SafePotionEffect extends PotionEffect {
 
